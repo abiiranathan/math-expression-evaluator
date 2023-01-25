@@ -4,61 +4,60 @@
 #include <cstdlib>
 #include <map>
 
-// pops last 2 numbers from the numberStack and evaluates them based on the operator token
+// pops last 2 numbers from the numbers and evaluates them based on the operator token
 // on top of the operatorStack.
-void calculate(std::stack<Token>& operatorStack, std::stack<double>& numberStack) {
-    Token operatorToken = operatorStack.top();
-    operatorStack.pop();
+void evaluate(std::stack<Token>& operators, std::stack<double>& numbers) {
+    Token op = operators.top();
+    operators.pop();
 
-    double value2 = numberStack.top();
-    numberStack.pop();
-    double value1 = numberStack.top();
-    numberStack.pop();
+    double value2 = numbers.top();
+    numbers.pop();
+    double value1 = numbers.top();
+    numbers.pop();
 
-    if (operatorToken.value == "+") {
-        numberStack.push(value1 + value2);
-    } else if (operatorToken.value == "-") {
-        numberStack.push(value1 - value2);
-    } else if (operatorToken.value == "*") {
-        numberStack.push(value1 * value2);
-    } else if (operatorToken.value == "/") {
-        numberStack.push(value1 / value2);
-    } else if (operatorToken.value == "^") {
-        numberStack.push(std::pow(value1, value2));
-    } else if (operatorToken.value == "%") {
-        numberStack.push((int)value1 % (int)value2);
+    if (op.value == "+") {
+        numbers.push(value1 + value2);
+    } else if (op.value == "-") {
+        numbers.push(value1 - value2);
+    } else if (op.value == "*") {
+        numbers.push(value1 * value2);
+    } else if (op.value == "/") {
+        numbers.push(value1 / value2);
+    } else if (op.value == "^") {
+        numbers.push(std::pow(value1, value2));
+    } else if (op.value == "%") {
+        numbers.push((int)value1 % (int)value2);
     }
 }
 
 double Parser::parse(std::vector<Token> tokens) {
-    std::stack<double> numberStack;
-    std::stack<Token> operatorStack;
-
+    std::stack<double> numbers;
+    std::stack<Token> operators;
     std::map<std::string, int> precedence{{"+", 1}, {"-", 1}, {"%", 1},
                                           {"^", 3}, {"*", 2}, {"/", 2}};
 
     for (const auto& token : tokens) {
         if (token.type == TokenType::INTEGER) {
-            numberStack.push(std::stold(token.value));
+            numbers.push(std::stold(token.value));
         } else if (token.type == TokenType::OPERATOR) {
-            while (!operatorStack.empty() && operatorStack.top().type == TokenType::OPERATOR &&
-                   (precedence[operatorStack.top().value] >= precedence[token.value])) {
-                calculate(operatorStack, numberStack);
+            while (!operators.empty() && operators.top().type == TokenType::OPERATOR &&
+                   (precedence[operators.top().value] >= precedence[token.value])) {
+                evaluate(operators, numbers);
             }
-            operatorStack.push(token);
+            operators.push(token);
         } else if (token.type == TokenType::LEFT_PAREN) {
-            operatorStack.push(token);
+            operators.push(token);
         } else if (token.type == TokenType::RIGHT_PAREN) {
-            while (operatorStack.top().type != TokenType::LEFT_PAREN) {
-                calculate(operatorStack, numberStack);
+            while (operators.top().type != TokenType::LEFT_PAREN) {
+                evaluate(operators, numbers);
             }
-            operatorStack.pop();
+            operators.pop();
         }
     }
 
-    while (!operatorStack.empty()) {
-        calculate(operatorStack, numberStack);
+    while (!operators.empty()) {
+        evaluate(operators, numbers);
     }
 
-    return numberStack.top();
+    return numbers.top();
 }
